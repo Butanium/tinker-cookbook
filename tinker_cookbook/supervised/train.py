@@ -541,6 +541,19 @@ async def main(config: Config):
         config.max_steps is None or start_epoch * n_batches + start_batch < config.max_steps
     )
     if did_train:
+        # Final eval on the post-final-optim weights, matching the saved final
+        # checkpoint's label semantics. Cookbook's in-loop eval cadence stops at
+        # step total_steps-1 (loop range), so without this, evaluators never see
+        # the genuinely-final weights — for asymmetric eval cadences (e.g. eval
+        # at fractions {1/6, 4/6, 1.0} of training), the 1.0 case would otherwise
+        # silently never fire.
+        if evaluators and config.eval_every > 0:
+            async with trace.scope_span("evals_final"):
+                final_eval_metrics = await run_evals(
+                    evaluators, training_client, total_steps
+                )
+            if final_eval_metrics:
+                ml_logger.log_metrics(metrics=final_eval_metrics, step=total_steps)
         await checkpoint_mgr.save_final_async(
             loop_state={"epoch": config.num_epochs, "batch": 0},
         )
