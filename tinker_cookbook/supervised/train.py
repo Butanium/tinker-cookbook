@@ -13,6 +13,7 @@ import time
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 import chz
 import tinker
@@ -93,6 +94,12 @@ class Config:
             waited on.  ``1`` (default) matches the historical single-lookahead
             behavior; ``0`` disables pipelining entirely; higher values deepen
             the pipeline for more overlap at the cost of memory.
+        checkpoint_kind (Literal["state", "sampler", "both"]): Which artifacts
+            periodic and final checkpoints export. ``"both"`` (default) saves
+            resume state + sampler weights; ``"sampler"`` saves only the sampler
+            weights (cheaper, but the run cannot be resumed from these
+            checkpoints); ``"state"`` saves only resume state. Rolling
+            checkpoints are always state-only regardless of this setting.
 
     Example::
 
@@ -142,6 +149,11 @@ class Config:
     rolling_save_every: int = 0
     # TTL for rolling checkpoints; short to auto-clean if explicit deletion fails.
     rolling_ttl_seconds: int = 7200  # 2 hours
+    # Which artifacts periodic and final checkpoints export. "both" (default)
+    # saves resume state + sampler weights; "sampler" saves only the sampler
+    # weights (cheaper, but the run can't be resumed from these checkpoints);
+    # "state" saves only resume state. Rolling checkpoints are always state-only.
+    checkpoint_kind: Literal["state", "sampler", "both"] = "both"
     # When True, periodic checkpoint saves run as background asyncio tasks
     # (fire-and-forget) instead of blocking the training loop. The final
     # checkpoint always blocks regardless of this setting.
@@ -357,6 +369,7 @@ async def main(config: Config):
         rolling_ttl_seconds=config.rolling_ttl_seconds,
         store=store,
         async_periodic_saves=config.async_periodic_saves,
+        checkpoint_kind=config.checkpoint_kind,
     )
 
     dataset, maybe_test_dataset = config.dataset_builder()
