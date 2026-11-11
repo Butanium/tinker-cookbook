@@ -11,6 +11,7 @@ python -m tinker_cookbook.recipes.vlm_classifier.sweep experiment_dir=./sweep mo
 """
 
 import asyncio
+import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from itertools import product
@@ -56,6 +57,8 @@ class ExperimentConfig:
 
     # Logging parameters
     wandb_project: str | None = None
+    # Display name for the Tinker session; defaults to the generated experiment name.
+    session_name: str | None = None
 
     train_on_what: TrainOnWhat = TrainOnWhat.LAST_ASSISTANT_MESSAGE
 
@@ -141,6 +144,7 @@ def run_experiment(experiment_config: ExperimentConfig):
         base_url=experiment_config.base_url,
         wandb_project=experiment_config.wandb_project,
         wandb_name=experiment_name,
+        session_name=experiment_config.session_name or experiment_name,
         lora_rank=experiment_config.lora_rank,
         save_every=experiment_config.save_every,
         eval_every=experiment_config.eval_every,
@@ -180,6 +184,9 @@ class SweepConfig:
 
     base_url: str | None = None
     wandb_project: str | None = None
+    # Prefix for Tinker session display names; each experiment appends its dataset and
+    # shot count. When unset, each experiment's generated name is used.
+    session_name: str | None = None
 
     # Number of experiments to run in parallel
     num_parallel: int = 5
@@ -209,6 +216,9 @@ def run_sweep(sweep_config: SweepConfig):
             max_length=sweep_config.max_length,
             examples_per_class=examples_per_class,
             wandb_project=sweep_config.wandb_project,
+            session_name=f"{sweep_config.session_name}-{target_dataset}-{examples_per_class}shot"
+            if sweep_config.session_name
+            else None,
             base_url=sweep_config.base_url,
             run_nll_evaluator=sweep_config.run_nll_evaluator,
             run_sampling_evaluator=sweep_config.run_sampling_evaluator,
@@ -222,7 +232,11 @@ def run_sweep(sweep_config: SweepConfig):
         f"Running {len(experiment_configs)} experiments with {sweep_config.num_parallel} parallel workers"
     )
 
-    with ProcessPoolExecutor(max_workers=sweep_config.num_parallel) as executor:
+    # Use "spawn": the Tinker client's background threads do not survive
+    # fork(), so fork-started workers (the Linux default) hang silently.
+    with ProcessPoolExecutor(
+        max_workers=sweep_config.num_parallel, mp_context=multiprocessing.get_context("spawn")
+    ) as executor:
         futures = [executor.submit(run_experiment, config) for config in experiment_configs]
         results = [f.result() for f in futures]
         print(f"{len(results)} experiments finished running")

@@ -108,6 +108,8 @@ _MODEL_EVAL_DEFAULTS: dict[str, dict[str, int | float]] = {
         "timeout_seconds": 1800,
     },
     "Qwen/Qwen3.6-27B": {"max_tokens": 65536, "context_window": 65536, "timeout_seconds": 1800},
+    # Qwen3.8 — Hybrid (thinking), 64K context (27B config identical to Qwen3.6-27B)
+    "Qwen/Qwen3.8-27B": {"max_tokens": 65536, "context_window": 65536, "timeout_seconds": 1800},
     # Qwen3.5 — Hybrid (thinking), 64K context
     "Qwen/Qwen3.5-397B-A17B": {
         "max_tokens": 65536,
@@ -135,6 +137,26 @@ _MODEL_EVAL_DEFAULTS: dict[str, dict[str, int | float]] = {
     # Qwen3 — Hybrid (thinking), 32K context
     "Qwen/Qwen3-8B": {"max_tokens": 32768, "context_window": 32768, "timeout_seconds": 1800},
     # Nemotron — Hybrid (thinking), 64K context
+    "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16": {
+        "max_tokens": 65536,
+        "context_window": 65536,
+        "timeout_seconds": 1800,
+    },
+    "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16:peft:262144": {
+        "max_tokens": 262144,
+        "context_window": 262144,
+        "timeout_seconds": 1800,
+    },
+    "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16": {
+        "max_tokens": 65536,
+        "context_window": 65536,
+        "timeout_seconds": 1800,
+    },
+    "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16:peft:262144": {
+        "max_tokens": 262144,
+        "context_window": 262144,
+        "timeout_seconds": 1800,
+    },
     "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16": {
         "max_tokens": 65536,
         "context_window": 65536,
@@ -174,11 +196,65 @@ _MODEL_EVAL_DEFAULTS: dict[str, dict[str, int | float]] = {
         "context_window": 32768,
         "timeout_seconds": 1800,
     },
+    # DeepSeek V4.1 Flash — Hybrid (thinking), 256K context
+    "deepseek-ai/DeepSeek-V4.1-Flash:peft:262144": {
+        "max_tokens": 262144,
+        "context_window": 262144,
+        "timeout_seconds": 1800,
+    },
+    # DeepSeek V4.1 Flash 1017 (256K) — Hybrid (thinking), 256K context
+    "deepseek-ai/DeepSeek-V4.1-Flash-1017:peft:262144": {
+        "max_tokens": 262144,
+        "context_window": 262144,
+        "timeout_seconds": 1800,
+    },
     # Kimi — Reasoning, 32K context
     "moonshotai/Kimi-K2.6": {"max_tokens": 32768, "context_window": 32768, "timeout_seconds": 1800},
     "moonshotai/Kimi-K2.6:peft:131072": {
         "max_tokens": 131072,
         "context_window": 131072,
+        "timeout_seconds": 1800,
+    },
+    # GLM — Reasoning (low/high/max effort), 256K context
+    "zai-org/GLM-5.3:peft:262144": {
+        "max_tokens": 262144,
+        "context_window": 262144,
+        "timeout_seconds": 1800,
+    },
+    "zai-org/GLM-5.3-Flash:peft:262144": {
+        "max_tokens": 262144,
+        "context_window": 262144,
+        "timeout_seconds": 1800,
+    },
+    # Inkling — Hybrid (thinking effort), 64K and 256K context
+    "thinkingmachines/Inkling": {
+        "max_tokens": 65536,
+        "context_window": 65536,
+        "timeout_seconds": 1800,
+    },
+    "thinkingmachines/Inkling:peft:262144": {
+        "max_tokens": 262144,
+        "context_window": 262144,
+        "timeout_seconds": 1800,
+    },
+    "thinkingmachines/Inkling-Small": {
+        "max_tokens": 65536,
+        "context_window": 65536,
+        "timeout_seconds": 1800,
+    },
+    "thinkingmachines/Inkling-Small:peft:262144": {
+        "max_tokens": 262144,
+        "context_window": 262144,
+        "timeout_seconds": 1800,
+    },
+    "thinkingmachines/Inkling-2-Small": {
+        "max_tokens": 65536,
+        "context_window": 65536,
+        "timeout_seconds": 1800,
+    },
+    "thinkingmachines/Inkling-2-Small:peft:262144": {
+        "max_tokens": 262144,
+        "context_window": 262144,
         "timeout_seconds": 1800,
     },
 }
@@ -198,7 +274,7 @@ class BenchmarkConfig:
 
         # Production eval with storage and higher timeout for thinking models
         config = BenchmarkConfig(
-            save_dir="evals/checkpoint_500",
+            save_dir=cli_utils.runs_path("evals", "checkpoint_500"),
             timeout_seconds=1800,
             max_tokens=65536,
         )
@@ -209,7 +285,7 @@ class BenchmarkConfig:
         )
 
         # Pass@k evaluation — run each example 4 times
-        config = BenchmarkConfig(num_samples=4, save_dir="evals/pass_at_k")
+        config = BenchmarkConfig(num_samples=4, save_dir=cli_utils.runs_path("evals", "pass_at_k"))
     """
 
     # Limits
@@ -327,7 +403,7 @@ class BenchmarkConfig:
 
             config = BenchmarkConfig.for_model(
                 "Qwen/Qwen3.6-35B-A3B",
-                save_dir="evals/my_model",
+                save_dir=cli_utils.runs_path("evals", "my_model"),
             )
             result = await run_benchmark("gsm8k", client, renderer, config)
 

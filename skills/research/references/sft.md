@@ -16,14 +16,33 @@
 | `qwen3_vl_instruct` | Qwen3 VL Instruct | Vision, no thinking |
 | `qwen3_5` | Qwen3.5/Qwen3.6 VL | Thinking enabled |
 | `qwen3_5_disable_thinking` | Qwen3.5/Qwen3.6 VL | Thinking disabled |
+| `qwen3_8_xhigh_reasoning` | Qwen3.8 VL | Thinking enabled, reasoning effort xhigh (default) |
+| `qwen3_8_medium_reasoning` | Qwen3.8 VL | Thinking enabled, reasoning effort medium |
+| `qwen3_8_low_reasoning` | Qwen3.8 VL | Thinking enabled, reasoning effort low |
+| `qwen3_8_disable_thinking` | Qwen3.8 VL | Thinking disabled |
 | `deepseekv3` | DeepSeek V3 | Defaults to non-thinking |
 | `deepseekv3_thinking` | DeepSeek V3 | Thinking mode |
+| `deepseekv4_1` | DeepSeek V4.1 | Thinking enabled, reasoning effort high (default) |
+| `deepseekv4_1_low_reasoning` | DeepSeek V4.1 | Thinking enabled, reasoning effort low |
+| `deepseekv4_1_max_reasoning` | DeepSeek V4.1 | Thinking enabled, reasoning effort max |
+| `deepseekv4_1_disable_thinking` | DeepSeek V4.1 | Thinking disabled |
+| `deepseekv4_1_preserve_thinking` | DeepSeek V4.1 | Preserve historical thinking |
+| `glm5_3_max_reasoning` | GLM-5.3 / GLM-5.3-Flash | Max reasoning effort |
+| `glm5_3_low_reasoning` | GLM-5.3 / GLM-5.3-Flash | Low reasoning effort (thinking cannot be disabled) |
+| `glm5_3_high_reasoning` | GLM-5.3 / GLM-5.3-Flash | High reasoning effort |
 | `kimi_k2` | Kimi K2 | Thinking format |
 | `kimi_k26` | Kimi K2.6 | Thinking enabled |
 | `kimi_k26_disable_thinking` | Kimi K2.6 | Thinking disabled |
 | `kimi_k26_preserve_thinking` | Kimi K2.6 | Preserve historical thinking |
-| `nemotron3` | Nemotron-3 | Thinking enabled |
-| `nemotron3_disable_thinking` | Nemotron-3 | Thinking disabled |
+| `kimi_k31_pro_max_reasoning` | Kimi K3.1-Pro | Thinking enabled, reasoning effort max (default) |
+| `kimi_k31_pro_high_reasoning` | Kimi K3.1-Pro | Thinking enabled, reasoning effort high |
+| `kimi_k31_pro_low_reasoning` | Kimi K3.1-Pro | Thinking enabled, reasoning effort low |
+| `kimi_k31_pro_disable_thinking` | Kimi K3.1-Pro | Thinking disabled |
+| `kimi_k31_pro_no_reasoning_effort` | Kimi K3.1-Pro | Thinking enabled, no reasoning-effort message |
+| `nemotron3` | Nemotron-3 Nano/Super | Thinking enabled |
+| `nemotron3_disable_thinking` | Nemotron-3 Nano/Super | Thinking disabled |
+| `nemotron3_ultra` | Nemotron-3 Ultra / 3.5 Lightning / 3.5 Super | Thinking enabled |
+| `nemotron3_ultra_disable_thinking` | Nemotron-3 Ultra / 3.5 Lightning / 3.5 Super | Thinking disabled |
 | `gpt_oss_no_sysprompt` | GPT-OSS | No system prompt |
 | `gpt_oss_low_reasoning` | GPT-OSS | Low reasoning |
 | `gpt_oss_medium_reasoning` | GPT-OSS | Medium reasoning |
@@ -99,7 +118,7 @@ register_renderer("my_renderer", my_renderer_factory)
 - `tinker_cookbook/renderers/qwen3_5.py` — Qwen3.5 renderers
 - `tinker_cookbook/renderers/llama3.py` — Llama3 renderer
 - `tinker_cookbook/renderers/deepseek_v3.py` — DeepSeek renderers
-- `tinker_cookbook/renderers/kimi_k2.py`, `kimi_k26.py` — Kimi renderers
+- `tinker_cookbook/renderers/kimi_k2.py`, `kimi_k26.py`, `kimi_k31_pro.py` — Kimi renderers
 - `tinker_cookbook/renderers/nemotron3.py` — Nemotron renderer
 - `tinker_cookbook/renderers/gpt_oss.py` — GPT-OSS renderers
 

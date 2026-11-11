@@ -14,7 +14,7 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # Tutorial 205: Evaluations
+    # Tutorial 204: Evaluations
 
     Tinker's evaluation system uses two abstract classes:
 
@@ -114,7 +114,7 @@ async def _(TensorData, api_key, get_renderer, mo, tinker, torch):
     MODEL_NAME = "Qwen/Qwen3.5-4B"
 
     service_client = tinker.ServiceClient()
-    training_client = await service_client.create_lora_training_client_async(
+    training_client = await service_client.create_lora_training_client(
         base_model=MODEL_NAME, rank=16
     )
     tokenizer = training_client.get_tokenizer()
@@ -168,8 +168,8 @@ def _(TrainingClientEvaluator, tinker):
 
         async def __call__(self, training_client: tinker.TrainingClient) -> dict[str, float]:
             # Run a forward pass (no gradients) to get logprobs
-            future = await training_client.forward_async(self.eval_data, loss_fn="cross_entropy")
-            result = await future.result_async()
+            future = training_client.forward(self.eval_data, loss_fn="cross_entropy")
+            result = await future
 
             # Compute weighted mean NLL
             total_nll = 0.0
@@ -223,7 +223,7 @@ def _(SamplingClientEvaluator, get_text_content, tinker):
                 prompt = self.renderer.build_generation_prompt(messages)
                 stop = self.renderer.get_stop_sequences()
 
-                result = await sampling_client.sample_async(
+                result = await sampling_client.sample(
                     prompt=prompt,
                     sampling_params=tinker.SamplingParams(
                         max_tokens=64, temperature=0.0, stop=stop
@@ -247,7 +247,7 @@ def _(SamplingClientEvaluator, get_text_content, tinker):
 @app.cell
 async def _(AccuracyEvaluator, renderer, tokenizer, training_client):
     # Create a sampling client from current weights
-    sampling_client = await training_client.save_weights_and_get_sampling_client_async()
+    sampling_client = await training_client.save_weights_and_get_sampling_client()
 
     # Define test questions
     test_qa = [
@@ -280,6 +280,7 @@ def _(mo):
     ### Supervised training with evaluators
 
     ```python
+    from tinker_cookbook import cli_utils
     from tinker_cookbook.supervised import train
 
     def make_nll_evaluator():
@@ -290,7 +291,7 @@ def _(mo):
         return AccuracyEvaluator(test_qa, renderer, tokenizer)
 
     config = train.Config(
-        log_path="/tmp/tinker-tutorials/sft-with-evals",
+        log_path=cli_utils.runs_path("tutorials", "sft-with-evals"),
         model_name="Qwen/Qwen3.5-4B",
         dataset_builder=my_dataset_builder,
         learning_rate=1e-4,
@@ -316,10 +317,11 @@ def _(mo):
     The RL `train.Config` works the same way, though it only accepts `SamplingClientEvaluatorBuilder`:
 
     ```python
+    from tinker_cookbook import cli_utils
     from tinker_cookbook.rl import train
 
     config = train.Config(
-        log_path="/tmp/tinker-tutorials/rl-with-evals",
+        log_path=cli_utils.runs_path("tutorials", "rl-with-evals"),
         model_name="Qwen/Qwen3.5-9B-Base",
         dataset_builder=my_rl_dataset_builder,
 

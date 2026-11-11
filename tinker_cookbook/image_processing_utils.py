@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 
 from PIL import Image
 
+from tinker_cookbook.tokenizer_utils import is_tml_renderers_model
+
 if TYPE_CHECKING:
     # this import takes a few seconds, so avoid it on the module import when possible
     from transformers.image_processing_utils import BaseImageProcessor
@@ -27,11 +29,9 @@ else:
 def get_image_processor(model_name: str) -> ImageProcessor:
     model_name = model_name.split(":", 1)[0]
 
-    # tml-renderers models tokenize images inside tml_renderers.v0
-    # (BlackPaddedImageTokenizer); they have no Hugging Face image processor.
-    # The tml_v0 cookbook renderer ignores
-    # the image_processor argument, so return None instead of failing in AutoImageProcessor.
-    if model_name == "thinkingmachines/Inkling":
+    # tml-renderers models tokenize images inside the wheel and their
+    # renderers take no image processor.
+    if is_tml_renderers_model(model_name):
         return None
 
     from transformers.models.auto.image_processing_auto import AutoImageProcessor
@@ -46,6 +46,9 @@ def get_image_processor(model_name: str) -> ImageProcessor:
     elif model_name == "moonshotai/Kimi-K2.6":
         kwargs["trust_remote_code"] = True
         kwargs["revision"] = "b5aabbfb20227ed42becbf5541dbffd213942c58"
+    elif model_name == "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16":
+        kwargs["trust_remote_code"] = True
+        kwargs["revision"] = "533d66230b6e75518bf32d2d7a7b95a24c3dd517"
 
     processor = AutoImageProcessor.from_pretrained(model_name, **kwargs)
 

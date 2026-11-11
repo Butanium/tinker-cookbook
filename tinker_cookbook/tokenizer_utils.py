@@ -14,15 +14,13 @@ import sys
 from collections.abc import Callable, Sequence
 from functools import cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol, TypeAlias, cast, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeAlias, cast, runtime_checkable
 
 # ---------------------------------------------------------------------------
-# Optional ``tml_renderers`` import shim.
+# ``tml_renderers`` import shim.
 #
-# ``tml_renderers`` is not part of the base cookbook dependency set; install
-# the ``inkling`` extra (``pip install 'tinker-cookbook[inkling]'``) to use
-# Inkling. The ``TML_RENDERERS_SOURCE_DIR`` escape hatch only exists so a
-# source checkout can be used without installing.
+# The ``TML_RENDERERS_SOURCE_DIR`` escape hatch allows a source checkout to be
+# used without installing.
 # ---------------------------------------------------------------------------
 
 
@@ -45,10 +43,8 @@ def ensure_tml_renderers_importable() -> None:
                 sys.path.remove(source_str)
 
     raise ModuleNotFoundError(
-        "Could not import optional dependency 'tml_renderers'. "
-        "Install it with: uv pip install 'tinker-cookbook[inkling]', "
-        "or set TML_RENDERERS_SOURCE_DIR to a directory containing the "
-        "tml_renderers package."
+        "Could not import dependency 'tml_renderers'. Reinstall tinker-cookbook, "
+        "or set TML_RENDERERS_SOURCE_DIR to a directory containing the tml_renderers package."
     )
 
 
@@ -69,8 +65,8 @@ class TmlTokenizer(Protocol):
     """Structural type for the underlying ``tml_renderers`` tokenizer.
 
     Cookbook never constructs this object (``tml_renderers.tokenizers`` does),
-    and ``tml_renderers`` is an optional, lazily imported dependency, so its
-    concrete type is not referenceable here. This protocol pins the small
+    and ``tml_renderers`` is lazily imported, so its concrete type is not
+    referenceable here. This protocol pins the small
     surface the cookbook adapter and renderer actually rely on, making the
     contract explicit instead of ``Any`` duck-typing.
     """
@@ -86,10 +82,57 @@ class TmlTokenizer(Protocol):
 
 
 @runtime_checkable
+class SupportsEncodeOrdinary(Protocol):
+    def encode_ordinary(self, text: str) -> Sequence[int]: ...
+
+
+def encode_without_special_tokens(
+    tokenizer: Tokenizer | SupportsEncodeOrdinary, text: str
+) -> list[int]:
+    """Encode raw text without adding model-level BOS/EOS tokens."""
+    if isinstance(tokenizer, SupportsEncodeOrdinary):
+        return list(tokenizer.encode_ordinary(text))
+    return list(tokenizer.encode(text, add_special_tokens=False))
+
+
+@runtime_checkable
 class SupportsTmlTokenizer(Protocol):
     """Tokenizer facade that exposes an underlying :class:`TmlTokenizer`."""
 
     tml_tokenizer: TmlTokenizer
+
+
+TmlTokenizerFamily: TypeAlias = Literal["o200k_base_chat", "h200k_base_chat", "kimi_k3"]
+
+
+def _tml_tokenizer_family(model_name: str) -> TmlTokenizerFamily | None:
+    """Return the tml-renderers tokenizer for a model, or None for a HuggingFace tokenizer."""
+    base_model_name = model_name.split(":", 1)[0]
+    if base_model_name == "thinkingmachines/Inkling-2-Small":
+        return "h200k_base_chat"
+    if base_model_name.startswith("thinkingmachines/Inkling"):
+        return "o200k_base_chat"
+    # Kimi K3.1-Pro uses the tokenizer of the K3 renderer family.
+    if base_model_name.startswith("moonshotai/Kimi-K3.1-Pro"):
+        return "kimi_k3"
+    return None
+
+
+def is_tml_renderers_model(model_name: str) -> bool:
+    """Return whether tml-renderers tokenizes ``model_name``."""
+    return _tml_tokenizer_family(model_name) is not None
+
+
+def _load_tml_tokenizer(family: TmlTokenizerFamily) -> TmlTokenizer:
+    ensure_tml_renderers_importable()
+    tokenizers = importlib.import_module("tml_renderers.tokenizers")
+    match family:
+        case "o200k_base_chat":
+            return tokenizers.O200kBaseChatTokenizer()
+        case "h200k_base_chat":
+            return tokenizers.H200kBaseChatTokenizer()
+        case "kimi_k3":
+            return tokenizers.KimiK3Tokenizer()
 
 
 class TmlRenderersTokenizerAdapter:
@@ -98,12 +141,9 @@ class TmlRenderersTokenizerAdapter:
     eos_token_id: int | None = None
     tml_tokenizer: TmlTokenizer
 
-    def __init__(self, name_or_path: str):
-        ensure_tml_renderers_importable()
-        tokenizers = importlib.import_module("tml_renderers.tokenizers")
-
+    def __init__(self, name_or_path: str, tml_tokenizer: TmlTokenizer):
         self.name_or_path = name_or_path
-        self.tml_tokenizer = tokenizers.o200k_base_chat()
+        self.tml_tokenizer = tml_tokenizer
         self.bos_token = self.tml_tokenizer.bos_token
         self.eos_token = self.tml_tokenizer.eos_token
         try:
@@ -187,7 +227,7 @@ def get_tokenizer(model_name: str) -> Tokenizer:
     """Get a tokenizer by name.
 
     Checks the custom registry first (see :func:`register_tokenizer`),
-    then returns a tml-renderers tokenizer for Inkling, or falls back to
+    then returns a tml-renderers tokenizer for Inkling models, or falls back to
     HuggingFace ``AutoTokenizer``. HuggingFace tokenizers are cached after first load.
 
     Args:
@@ -195,7 +235,7 @@ def get_tokenizer(model_name: str) -> Tokenizer:
             ``"Qwen/Qwen3-8B"``) or a custom registered name.
 
     Returns:
-        Tokenizer: A tml-renderers tokenizer for Inkling, otherwise a
+        Tokenizer: A tml-renderers tokenizer for Inkling models, otherwise a
             HuggingFace ``PreTrainedTokenizer``.
 
     Example::
@@ -209,10 +249,10 @@ def get_tokenizer(model_name: str) -> Tokenizer:
     if (tokenizer := _CUSTOM_TOKENIZER_REGISTRY.get(model_name)) is not None:
         return tokenizer()
 
-    base_model_name = model_name.split(":", 1)[0]
-    if base_model_name == "thinkingmachines/Inkling":
+    if (family := _tml_tokenizer_family(model_name)) is not None:
         # Duck-typed facade (encode/decode/eos_token_id); not a PreTrainedTokenizer.
-        return cast(Tokenizer, TmlRenderersTokenizerAdapter(model_name))
+        adapter = TmlRenderersTokenizerAdapter(model_name, _load_tml_tokenizer(family))
+        return cast(Tokenizer, adapter)
 
     return _get_hf_tokenizer(model_name)
 
@@ -260,5 +300,10 @@ def _get_hf_tokenizer(model_name: str) -> Tokenizer:
             "tokenization_kimi.TikTokenTokenizer", model_name, revision=revision
         )
         return cls.from_pretrained(model_name, revision=revision)
+
+    if model_name == "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16":
+        # Only config.json is custom code (`nemotron_h_omni`); the tokenizer is not. Without an
+        # explicit False, transformers stops at an interactive "run custom code?" prompt.
+        kwargs.setdefault("trust_remote_code", False)
 
     return AutoTokenizer.from_pretrained(model_name, **kwargs)

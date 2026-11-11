@@ -18,6 +18,8 @@ from tinker_cookbook.model_info import (
     get_moonshot_info,
     get_nvidia_info,
     get_qwen_info,
+    get_thinkingmachines_info,
+    get_zai_info,
 )
 
 
@@ -31,6 +33,8 @@ def _all_model_info_names() -> list[str]:
         get_gpt_oss_info,
         get_moonshot_info,
         get_nvidia_info,
+        get_thinkingmachines_info,
+        get_zai_info,
     ):
         for name, attrs in getter().items():
             names.append(f"{attrs.organization}/{name}")
@@ -207,6 +211,15 @@ _REFERENCE_PARAMS_PER_RANK: dict[str, dict[tuple[bool, bool, bool], int]] = {
         (False, True, False): 2_965_504,
         (False, False, True): 253_440,
     },
+    "Qwen/Qwen3.8-27B": {
+        (True, True, True): 7_544_320,
+        (True, True, False): 7_290_880,
+        (True, False, True): 4_578_816,
+        (True, False, False): 4_325_376,
+        (False, True, True): 3_218_944,
+        (False, True, False): 2_965_504,
+        (False, False, True): 253_440,
+    },
     "Qwen/Qwen3.6-35B-A3B": {
         (True, True, True): 17_545_728,
         (True, True, False): 17_295_360,
@@ -233,6 +246,24 @@ _REFERENCE_PARAMS_PER_RANK: dict[str, dict[tuple[bool, bool, bool], int]] = {
         (False, True, True): 2_576_448,
         (False, True, False): 2_440_000,
         (False, False, True): 136_448,
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash": {
+        (True, True, True): 108_821_760,
+        (True, True, False): 108_687_360,
+        (True, False, True): 107_808_000,
+        (True, False, False): 107_673_600,
+        (False, True, True): 1_148_160,
+        (False, True, False): 1_013_760,
+        (False, False, True): 134_400,
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash-1017": {
+        (True, True, True): 108_821_760,
+        (True, True, False): 108_687_360,
+        (True, False, True): 107_808_000,
+        (True, False, False): 107_673_600,
+        (False, True, True): 1_148_160,
+        (False, True, False): 1_013_760,
+        (False, False, True): 134_400,
     },
     "meta-llama/Llama-3.1-70B": {
         (True, True, True): 13_079_808,
@@ -315,6 +346,15 @@ _REFERENCE_PARAMS_PER_RANK: dict[str, dict[tuple[bool, bool, bool], int]] = {
         (False, True, False): 1_940_288,
         (False, False, True): 171_008,
     },
+    "moonshotai/Kimi-K3.1-Pro": {
+        (True, True, True): 774_669_824,
+        (True, True, False): 774_498_816,
+        (True, False, True): 766_628_864,
+        (True, False, False): 766_457_856,
+        (False, True, True): 8_211_968,
+        (False, True, False): 8_040_960,
+        (False, False, True): 171_008,
+    },
     "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16": {
         (True, True, True): 12_064_768,
         (True, True, False): 11_931_008,
@@ -323,6 +363,24 @@ _REFERENCE_PARAMS_PER_RANK: dict[str, dict[tuple[bool, bool, bool], int]] = {
         (False, True, True): 718_592,
         (False, True, False): 584_832,
         (False, False, True): 133_760,
+    },
+    "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16": {
+        (True, True, True): 12_064_768,
+        (True, True, False): 11_931_008,
+        (True, False, True): 11_479_936,
+        (True, False, False): 11_346_176,
+        (False, True, True): 718_592,
+        (False, True, False): 584_832,
+        (False, False, True): 133_760,
+    },
+    "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16": {
+        (True, True, True): 113_160_192,
+        (True, True, False): 113_025_024,
+        (True, False, True): 111_484_928,
+        (True, False, False): 111_349_760,
+        (False, True, True): 1_810_432,
+        (False, True, False): 1_675_264,
+        (False, False, True): 135_168,
     },
     "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16": {
         (True, True, True): 113_160_192,
@@ -369,6 +427,42 @@ _REFERENCE_PARAMS_PER_RANK: dict[str, dict[tuple[bool, bool, bool], int]] = {
         (False, True, False): 3_424_256,
         (False, False, True): 207_168,
     },
+    "thinkingmachines/Inkling-2-Small": {
+        (True, True, True): 130_618_176,
+        (True, True, False): 130_412_544,
+        (True, False, True): 128_271_168,
+        (True, False, False): 128_065_536,
+        (False, True, True): 2_552_640,
+        (False, True, False): 2_347_008,
+        (False, False, True): 205_632,
+    },
+    "thinkingmachines/Inkling-Small": {
+        (True, True, True): 66_020_672,
+        (True, True, False): 65_815_552,
+        (True, False, True): 64_708_928,
+        (True, False, False): 64_503_808,
+        (False, True, True): 1_516_864,
+        (False, True, False): 1_311_744,
+        (False, False, True): 205_120,
+    },
+    "zai-org/GLM-5.3": {
+        (True, True, True): 124_437_632,
+        (True, True, False): 124_276_608,
+        (True, False, True): 121_517_312,
+        (True, False, False): 121_356_288,
+        (False, True, True): 3_081_344,
+        (False, True, False): 2_920_320,
+        (False, False, True): 161_024,
+    },
+    "zai-org/GLM-5.3-Flash": {
+        (True, True, True): 77_923_584,
+        (True, True, False): 77_764_608,
+        (True, False, True): 75_914_496,
+        (True, False, False): 75_755_520,
+        (False, True, True): 2_168_064,
+        (False, True, False): 2_009_088,
+        (False, False, True): 158_976,
+    },
 }
 
 _TEST_RANKS = (1, 2, 4, 8, 16, 32, 64)
@@ -401,14 +495,14 @@ class TestHyperparamUtils:
         )
 
     def test_get_lr_returns_float(self):
-        lr = get_lr("Qwen/Qwen3.6-27B", is_lora=True)
+        lr = get_lr("Qwen/Qwen3-8B", is_lora=True)
         assert isinstance(lr, float)
         assert lr > 0
 
     def test_get_lora_param_count_rejects_all_false(self):
         with pytest.raises(ValueError):
             get_lora_param_count(
-                "Qwen/Qwen3.6-27B",
+                "Qwen/Qwen3-8B",
                 lora_rank=32,
                 train_mlp=False,
                 train_attn=False,
@@ -422,6 +516,22 @@ class TestHyperparamUtils:
         is added to the registry without measuring its LoRA param counts.
         """
         assert get_lora_param_count(model_name, lora_rank=1) > 0
+
+    @pytest.mark.parametrize("model_name", _all_model_info_names())
+    @pytest.mark.parametrize("suffix", [":peft:262144", ":peft:131072"])
+    def test_get_lora_param_count_ignores_variant_suffix(self, model_name: str, suffix: str):
+        """Variant-suffixed ids must resolve like the base name.
+
+        Some models are only served under a suffixed id (e.g.
+        ``zai-org/GLM-5.3:peft:262144``), so the suffixed name is the only one a
+        user can pass.
+        """
+        assert get_lora_param_count(model_name + suffix, lora_rank=1) == get_lora_param_count(
+            model_name, lora_rank=1
+        )
+
+    def test_get_lr_ignores_variant_suffix(self):
+        assert get_lr("Qwen/Qwen3-8B:peft:262144") == get_lr("Qwen/Qwen3-8B")
 
     @pytest.mark.parametrize(
         "flag_combo",

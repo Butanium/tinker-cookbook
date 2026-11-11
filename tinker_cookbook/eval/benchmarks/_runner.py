@@ -459,7 +459,7 @@ async def run_benchmark(
 
         # With custom grading and trajectory storage:
         config = BenchmarkConfig(
-            save_dir="evals/step500",
+            save_dir=cli_utils.runs_path("evals", "step500"),
             timeout_seconds=1800,
             grade_fn=my_custom_grader,
         )
@@ -610,6 +610,7 @@ async def run_benchmark(
                         elapsed,
                         example_id=_get_example_id(env, idx),
                     )
+                    stored.metrics.update(step_metrics)
                     if config.grade_fn is not None:
                         stored.reward = total_reward
                     await _save_trajectory(storage, benchmark.name, stored)
@@ -833,7 +834,7 @@ async def run_benchmarks(
             ["gsm8k", "mmlu_pro", "ifeval"],
             sampling_client,
             renderer,
-            BenchmarkConfig(save_dir="evals/step500"),
+            BenchmarkConfig(save_dir=cli_utils.runs_path("evals", "step500")),
         )
         for name, result in results.items():
             print(f"{name}: {result.score:.1%}")
@@ -910,7 +911,9 @@ def load_trajectories(
 
     Example::
 
-        wrong = load_trajectories("evals/step500", "gsm8k", incorrect_only=True)
+        wrong = load_trajectories(
+            cli_utils.runs_path("evals", "step500"), "gsm8k", incorrect_only=True
+        )
         for t in wrong[:5]:
             print(f"Expected: {t.logs.get('expected')}")
             print(f"Got: {t.logs.get('extracted')}")
@@ -958,7 +961,7 @@ def load_summary(save_dir: str) -> dict[str, dict]:
 
     Example::
 
-        summary = load_summary("evals/step500")
+        summary = load_summary(cli_utils.runs_path("evals", "step500"))
         for name, info in summary.items():
             print(f"{name}: {info['score']:.1%}")
     """
@@ -1029,7 +1032,7 @@ def regrade_trajectories(
             extracted = match.group(1) if match else ""
             return 1.0 if extracted.strip() == expected.strip() else 0.0
 
-        result = regrade_trajectories("evals/step500", "gsm8k", my_grader)
+        result = regrade_trajectories(cli_utils.runs_path("evals", "step500"), "gsm8k", my_grader)
         print(f"Re-graded: {result.score:.1%}")
     """
     trajectories = load_trajectories(save_dir, benchmark_name)
